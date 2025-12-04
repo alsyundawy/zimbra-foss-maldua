@@ -308,6 +308,13 @@ def family_to_label(family: str) -> str:
         # Default fallback: keep family.x
         return f"{family}.x"
 
+# Helper to convert version string to float for sorting (e.g., "20.04" -> 20.04)
+def version_to_float(v):
+    try:
+        return float(v)
+    except ValueError:
+        return 0.0
+
 def filterByCategory(matrix, category):
   newMatrix = []
   for nRow in matrix:
@@ -732,6 +739,8 @@ def writeLatestDownloadsPage(downloads_md):
     header = generate_downloads_header("latest")
     outputBlockNewLine(downloads_md, header)
 
+    append_files(templatesDir + "/" + "section-top-disclaimers.md", downloads_md)
+
     for versionTag in latestVersionTags:
         outputLatestSection(downloads_md, versionTag, releasesMatrix)
 
@@ -755,12 +764,7 @@ def writeLatestPerPlatformDownloadsPage(downloads_md):
     header = generate_downloads_header("latest_per_platform")
     outputBlockNewLine(downloads_md, header)
 
-    # Helper to convert version string to float for sorting (e.g., "20.04" -> 20.04)
-    def version_to_float(v):
-        try:
-            return float(v)
-        except ValueError:
-            return 0.0
+    append_files(templatesDir + "/" + "section-top-disclaimers.md", downloads_md)
 
     # Collect all distro variants with family and version info
     distroList = []
@@ -829,6 +833,8 @@ def writeLatestPerFamilyDownloadsPage(downloads_md):
 
     header = generate_downloads_header("latest_per_family")
     outputBlockNewLine(downloads_md, header)
+
+    append_files(templatesDir + "/" + "section-top-disclaimers.md", downloads_md)
 
     # Build mapping family -> list of versionTags
     familyBuckets = {}
