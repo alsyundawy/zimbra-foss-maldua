@@ -5,6 +5,7 @@ import shutil
 import re
 import requests
 from subprocess import run, PIPE
+from datetime import datetime
 
 # Please run from docs folder
 
@@ -21,6 +22,7 @@ EXPERIMENTAL_ICON = "\U0001F9EC"
 OTHER_ICON = "\U0001F5C2\ufe0f"
 EMPTY_ICON = "\u2205"
 ARCHIVE_ICON = "\U0001F5C4"
+LATEST_ICON = "\U0001F195"
 
 # Global variables
 header_links_mapping = {
@@ -29,7 +31,8 @@ header_links_mapping = {
     "recent": "recent.md",
     "experimental": "experimental.md",
     "other": "other.md",
-    "archive": "archive.md",
+    "latest": "latest.md",
+    "archive": "archive.md"
 }
 
 shortNamesLabels = {
@@ -38,7 +41,8 @@ shortNamesLabels = {
     "recent": f"{RECENT_ICON} Recent {RECENT_ICON}",
     "experimental": f"{EXPERIMENTAL_ICON} Experimental {EXPERIMENTAL_ICON}",
     "other": f"{OTHER_ICON} Other {OTHER_ICON}",
-    "archive": f"{ARCHIVE_ICON} Archive {ARCHIVE_ICON}"
+    "archive": f"{ARCHIVE_ICON} Archive {ARCHIVE_ICON}",
+    "latest": f"{LATEST_ICON} Latest {LATEST_ICON}"
 }
 
 # Resolve output directory: we are running from docs-pages/downloads
@@ -55,6 +59,7 @@ stable_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "stable.md")
 recent_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "recent.md")
 experimental_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "experimental.md")
 other_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "other.md")
+latest_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "latest.md")
 
 # templates/ and images/ remain relative to current folder
 templatesDir = 'templates'
@@ -207,6 +212,47 @@ def getReleasesMatrix():
 
       releasesMatrix.append(tagsItem)
   return (releasesMatrix)
+
+from datetime import datetime
+
+def getLatestVersionTagsByBuildDate(matrix, limit=5):
+    """
+    Returns the latest `limit` versionTag groups based on their newest buildDate.
+    """
+    buckets = {}
+
+    for row in matrix:
+        vt = row["versionTag"]
+        buildDate = datetime.fromisoformat(row["buildDate"].replace("Z","+00:00"))
+        if vt not in buckets:
+            buckets[vt] = []
+        buckets[vt].append(buildDate)
+
+    # Pick the most recent build date per versionTag
+    versionTag_with_latest_date = [
+        (vt, max(dates)) for vt, dates in buckets.items()
+    ]
+
+    # Sort by date descending
+    versionTag_sorted = sorted(
+        versionTag_with_latest_date,
+        key=lambda t: t[1],
+        reverse=True
+    )
+
+    # Return only versionTag names
+    return [t[0] for t in versionTag_sorted[:limit]]
+
+def getShortNameForVersionTag(versionTag, releasesMatrix):
+    """
+    Given a versionTag, find its category and return the corresponding shortNamesLabels value.
+    If multiple categories appear (should not happen), the first one wins.
+    """
+    for row in releasesMatrix:
+        if row["versionTag"] == versionTag:
+            category = row["category"]
+            return shortNamesLabels.get(category, shortNamesLabels["other"])
+    return shortNamesLabels["other"]
 
 def filterByCategory(matrix, category):
   newMatrix = []
@@ -425,6 +471,8 @@ experimentalVersionTags = orderedAndUniqueVersionTags (experimentalVersionTags)
 otherVersionTags = getVersionTags (otherReleasesMatrix)
 otherVersionTags = orderedAndUniqueVersionTags (otherVersionTags)
 
+latestVersionTags = getLatestVersionTagsByBuildDate(releasesMatrix, limit=5)
+
 def generate_downloads_header(current_idCategory):
     """
     Generate a markdown header menu for Zimbra downloads with the current category highlighted.
@@ -610,6 +658,32 @@ def writeOtherDownloadsPage(downloads_md):
         idCategory="other"
     )
 
+def outputLatestSection(downloads_md, versionTag, releasesMatrix):
+    versionTags = [versionTag]
+    shortName = getShortNameForVersionTag(versionTag, releasesMatrix)
+
+    outputSection(
+        downloads_md=downloads_md,
+        versionTags=versionTags,
+        releasesMatrix=releasesMatrix,
+        shortName=shortName
+    )
+
+def writeLatestDownloadsPage(downloads_md):
+    # Remove old file
+    if os.path.isfile(downloads_md):
+        os.remove(downloads_md)
+
+    header = generate_downloads_header("latest")
+    outputBlockNewLine(downloads_md, header)
+
+    for versionTag in latestVersionTags:
+        outputLatestSection(downloads_md, versionTag, releasesMatrix)
+
+    outputNewLine(downloads_md)
+    header = generate_downloads_header("latest")
+    outputBlockNewLine(downloads_md, header)
+
 writeAdvancedDownloadsPage(archive_md)
 writeSimpleDownloadsPage(main_downloads_md)
 
@@ -617,6 +691,7 @@ writeStableDownloadsPage(stable_md)
 writeRecentDownloadsPage(recent_md)
 writeExperimentalDownloadsPage(experimental_md)
 writeOtherDownloadsPage(other_md)
+writeLatestDownloadsPage(latest_md)
 
 # Copy images/ folder into docs/
 src_images = os.path.join(os.path.dirname(__file__), "images")
