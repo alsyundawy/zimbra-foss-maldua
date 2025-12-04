@@ -23,6 +23,7 @@ OTHER_ICON = "\U0001F5C2\ufe0f"
 EMPTY_ICON = "\u2205"
 ARCHIVE_ICON = "\U0001F5C4"
 LATEST_ICON = "\U0001F195"
+LATEST_PER_PLATFORM_ICON = "\U0001F4F0"
 
 # Global variables
 header_links_mapping = {
@@ -32,6 +33,7 @@ header_links_mapping = {
     "experimental": "experimental.md",
     "other": "other.md",
     "latest": "latest.md",
+    "latest_per_platform": "latest-per-platform.md",
     "archive": "archive.md"
 }
 
@@ -42,7 +44,8 @@ shortNamesLabels = {
     "experimental": f"{EXPERIMENTAL_ICON} Experimental {EXPERIMENTAL_ICON}",
     "other": f"{OTHER_ICON} Other {OTHER_ICON}",
     "archive": f"{ARCHIVE_ICON} Archive {ARCHIVE_ICON}",
-    "latest": f"{LATEST_ICON} Latest {LATEST_ICON}"
+    "latest": f"{LATEST_ICON} Latest {LATEST_ICON}",
+    "latest_per_platform": f"{LATEST_PER_PLATFORM_ICON} Latest per Platform {LATEST_PER_PLATFORM_ICON}"
 }
 
 # Resolve output directory: we are running from docs-pages/downloads
@@ -60,6 +63,7 @@ recent_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "recent.md")
 experimental_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "experimental.md")
 other_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "other.md")
 latest_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "latest.md")
+latest_per_platform_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "latest-per-platform.md")
 
 # templates/ and images/ remain relative to current folder
 templatesDir = 'templates'
@@ -253,6 +257,24 @@ def getShortNameForVersionTag(versionTag, releasesMatrix):
             category = row["category"]
             return shortNamesLabels.get(category, shortNamesLabels["other"])
     return shortNamesLabels["other"]
+
+def getLatestVersionTagsByDistro(releasesMatrix, distroLongName, limit=2):
+    filteredMatrix = [row for row in releasesMatrix if row["distroLongName"] == distroLongName]
+    if not filteredMatrix:
+        return []
+    # Group by versionTag and pick the most recent buildDate
+    versionBuckets = {}
+    for row in filteredMatrix:
+        vt = row["versionTag"]
+        buildDate = datetime.fromisoformat(row["buildDate"].replace("Z","+00:00"))
+        if vt not in versionBuckets:
+            versionBuckets[vt] = []
+        versionBuckets[vt].append(buildDate)
+    # Take most recent build per version
+    version_with_latest = [(vt, max(dates)) for vt, dates in versionBuckets.items()]
+    # Sort by build date descending
+    version_sorted = sorted(version_with_latest, key=lambda t: t[1], reverse=True)
+    return [t[0] for t in version_sorted[:limit]]
 
 def filterByCategory(matrix, category):
   newMatrix = []
@@ -685,6 +707,83 @@ def writeLatestDownloadsPage(downloads_md):
     header = generate_downloads_header("latest")
     outputBlockNewLine(downloads_md, header)
 
+def writeLatestPerPlatformDownloadsPage(downloads_md):
+    """
+    Generate the 'latest-per-platform.md' downloads page:
+    - Shows all distro variants.
+    - Ordered by family alphabetically and distro version descending.
+    - Latest 2 releases per distro.
+    - Adds index at top with links to each distro section.
+    - Adds markdown section heading for each distro.
+    """
+    # Remove old file
+    if os.path.isfile(downloads_md):
+        os.remove(downloads_md)
+
+    header = generate_downloads_header("latest_per_platform")
+    outputBlockNewLine(downloads_md, header)
+
+    # Helper to convert version string to float for sorting (e.g., "20.04" -> 20.04)
+    def version_to_float(v):
+        try:
+            return float(v)
+        except ValueError:
+            return 0.0
+
+    # Collect all distro variants with family and version info
+    distroList = []
+    for row in releasesMatrix:
+        prefix_parts = row["prefixTag"].split("-")
+        family = prefix_parts[-2].capitalize()  # e.g., "Ubuntu", "Rhel", "Rocky"
+        distro_version = prefix_parts[-1]       # e.g., "20.04", "8", "9"
+        distroList.append((family, version_to_float(distro_version), row["distroLongName"]))
+
+    # Remove duplicates (keep order)
+    seen = set()
+    uniqueDistros = []
+    for fam, ver, name in distroList:
+        if name not in seen:
+            seen.add(name)
+            uniqueDistros.append((fam, ver, name))
+
+    # Sort by family alphabetically, then version descending
+    sortedDistros = sorted(uniqueDistros, key=lambda x: (x[0], -x[1]))
+
+    # --- Generate index ---
+    index_lines = ["## Index\n"]
+    for family, version, distroName in sortedDistros:
+        # Markdown anchor: lowercase, replace spaces and dots with hyphens
+        anchor = distroName.lower().replace(" ", "-").replace(".", "")
+        index_lines.append(f"- [{distroName}](#{anchor})")
+    outputBlockNewLine(downloads_md, "\n".join(index_lines))
+    outputNewLine(downloads_md)
+
+    # --- Generate sections for each distro ---
+    for family, version, distroName in sortedDistros:
+        outputNewHLine(downloads_md)
+        # Markdown section heading for the distro
+        anchor = distroName.lower().replace(" ", "-").replace(".", "")
+        distro_header = f"\n## {distroName} {{#{anchor}}}\n"
+        outputBlockNewLine(downloads_md, distro_header)
+
+        latestTags = getLatestVersionTagsByDistro(releasesMatrix, distroName, limit=2)
+        for versionTag in latestTags:
+            filteredMatrix = filterByVersionTag(releasesMatrix, versionTag)
+            filteredMatrix = [row for row in filteredMatrix if row["distroLongName"] == distroName]
+            if filteredMatrix:
+                category = filteredMatrix[0]["category"]
+                shortName = f"{shortNamesLabels.get(category, category)}"
+                outputSection(downloads_md, [versionTag], filteredMatrix, shortName)
+
+    outputNewLine(downloads_md)
+    outputBlockNewLine(downloads_md, "\n".join(index_lines))
+    outputNewLine(downloads_md)
+
+    outputNewLine(downloads_md)
+    # Repeat header at the bottom
+    header = generate_downloads_header("latest_per_platform")
+    outputBlockNewLine(downloads_md, header)
+
 writeAdvancedDownloadsPage(archive_md)
 writeSimpleDownloadsPage(main_downloads_md)
 
@@ -693,6 +792,7 @@ writeRecentDownloadsPage(recent_md)
 writeExperimentalDownloadsPage(experimental_md)
 writeOtherDownloadsPage(other_md)
 writeLatestDownloadsPage(latest_md)
+writeLatestPerPlatformDownloadsPage(latest_per_platform_md)
 
 # Copy images/ folder into docs/
 src_images = os.path.join(os.path.dirname(__file__), "images")
