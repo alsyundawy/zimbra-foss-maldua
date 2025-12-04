@@ -26,6 +26,13 @@ LATEST_ICON = "\U0001F195"
 LATEST_PER_PLATFORM_ICON = "\U0001F4F0"
 LATEST_PER_FAMILY_ICON = "\U0001F4CB"
 
+MENU_GROUPS = {
+    "Main": ["main"],
+    "Categories": ["stable", "recent", "experimental", "other"],
+    "Latest": ["latest", "latest_per_platform", "latest_per_family"],
+    "Misc": ["archive"]
+}
+
 # Global variables
 header_links_mapping = {
     "main": "README.md",
@@ -536,26 +543,29 @@ latestVersionTags = getLatestVersionTagsByBuildDate(releasesMatrix, limit=5)
 
 def generate_downloads_header(current_idCategory):
     """
-    Generate a markdown header menu for Zimbra downloads with the current category highlighted.
-
-    Args:
-        current_idCategory (str): The category to highlight (e.g., 'stable', 'recent').
-
-    Returns:
-        str: Markdown string for the header menu.
+    Generate a markdown header menu for Zimbra downloads with the current category highlighted,
+    arranged in labeled rows.
     """
-    prefix = "Maldua's Zimbra Foss Downloads: "
-    postfix = " \\| ( Learn more at: [Maldua's Zimbra Foss](../) and [Maldua's Zimbra Foss Github repo](https://github.com/maldua/zimbra-foss). )"
-    menu_items = []
-    for idCat, file in header_links_mapping.items():
-        label = shortNamesLabels.get(idCat, idCat.capitalize())
-        item = f"[{label}]({file})"
-        if idCat == current_idCategory:
-            item = f"**{item}**"
-        menu_items.append(item)
+    prefix = "Maldua's Zimbra Foss Downloads"
+    postfix = "\n( Learn more at: [Maldua's Zimbra Foss](../) and [Maldua's Zimbra Foss Github repo](https://github.com/maldua/zimbra-foss). )"
 
-    # Join menu items with separator
-    return ( prefix + " \\| ".join(menu_items) + postfix )
+    rows = []
+
+    for group_label, ids in MENU_GROUPS.items():
+        row_items = []
+        for idCat in ids:
+            file = header_links_mapping[idCat]
+            label = shortNamesLabels.get(idCat, idCat.capitalize())
+            item = f"[{label}]({file})"
+            if idCat == current_idCategory:
+                item = f"**{item}**"
+            row_items.append(item)
+
+        row_md = f"- *{group_label}:* " + " \\| ".join(row_items)
+        rows.append(row_md)
+
+    # Combine into final markdown block
+    return prefix + "\n" + "\n" + "\n".join(rows) + "\n" + postfix
 
 def renderCategoryBlock(
     downloads_md,
