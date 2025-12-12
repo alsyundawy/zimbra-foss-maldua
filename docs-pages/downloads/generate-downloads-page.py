@@ -35,7 +35,7 @@ MENU_GROUPS = {
 
 # Global variables
 header_links_mapping = {
-    "main": "README.md",
+    "main": "index.md",
     "stable": "stable.md",
     "recent": "recent.md",
     "experimental": "experimental.md",
@@ -68,7 +68,7 @@ VERSION_DIR = os.path.join(DOWNLOADS_OUTPUT_DIR, "version")
 os.makedirs(VERSION_DIR, exist_ok=True)
 
 # Write output into docs/
-main_downloads_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "README.md")
+main_downloads_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "index.md")
 archive_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "archive.md")
 stable_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "stable.md")
 recent_md = os.path.join(DOWNLOADS_OUTPUT_DIR, "recent.md")
