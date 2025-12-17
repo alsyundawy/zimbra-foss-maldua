@@ -467,6 +467,16 @@ description: {title} - {description} - Zimbra Foss Downloads (from Maldua)
 
 ''')
 
+def outputSimpleTitle(downloads_md, title="", description=""):
+    with open(downloads_md, 'a') as outfile:
+      outfile.write(f'''\
+---
+title: Zimbra Foss Downloads (from Maldua)
+description: {title} - {description} - Zimbra Foss Downloads (from Maldua)
+---
+
+''')
+
 def outputSection(downloads_md, versionTags, releasesMatrix, shortName, url_prefix=""):
   if not releasesMatrix:
     with open(downloads_md, 'a') as outfile:
@@ -672,7 +682,7 @@ def writeSimpleDownloadsPage(downloads_md):
 
   title=f"Main"
   description=f"Main page for downloading Maldua's releases."
-  outputTitle(downloads_md, title=title, description=description)
+  outputSimpleTitle(downloads_md, title=title, description=description)
 
   header = generate_downloads_header("main", title=title)
   outputBlockNewLine(downloads_md, header)
