@@ -15,6 +15,25 @@ TEMPLATE_TAG_PREFIX = {
     "docker-builds.yml": "docker-builds-{{NAME_SHORT}}"
 }
 
+# Variable mappings
+PER_DISTRO_VARS = {
+    "DOCKER_TAG_EXPR": lambda d: d.get("docker_tag", ""),
+    "BUILD_DIR_PREFIX_EXPR": lambda d: d.get("build_dir_prefix", ""),
+    "FULLNAME_EXPR": lambda d: d.get("fullname", ""),
+    "BUILDZIMBRAFOR_EXPR": lambda d: d.get("fullname", ""),
+    "DISTRO_FAMILY_EXPR": lambda d: d.get("distro_family", ""),
+    "VERSION_EXPR": lambda d: d.get("version", ""),
+}
+
+MATRIX_VARS = {
+    "DOCKER_TAG_EXPR": "${{ matrix.distro.docker_tag }}",
+    "BUILD_DIR_PREFIX_EXPR": "${{ matrix.distro.build_dir_prefix }}",
+    "FULLNAME_EXPR": "${{ matrix.distro.fullname }}",
+    "BUILDZIMBRAFOR_EXPR": "all",
+    "DISTRO_FAMILY_EXPR": "${{ matrix.distro.distro_family }}",
+    "VERSION_EXPR": "${{ matrix.distro.version }}",
+}
+
 def generate_workflow(template_content: str, distro: dict, output_dir: str, tag_prefix_template: str) -> str:
     """
     Generate a per-distro workflow YAML for a given distro using the template.
@@ -26,14 +45,15 @@ def generate_workflow(template_content: str, distro: dict, output_dir: str, tag_
     # Replace placeholders
     workflow_content = workflow_content.replace("{{NAME}}", distro["name"])
     workflow_content = workflow_content.replace("{{NAME_SHORT}}", name_short)
-    workflow_content = workflow_content.replace("{{DOCKER_TAG}}", distro.get("docker_tag", ""))
-    workflow_content = workflow_content.replace("{{BUILD_DIR_PREFIX}}", distro.get("build_dir_prefix", ""))
     workflow_content = workflow_content.replace("{{TAG_PREFIX}}", tag_prefix_template.replace("{{NAME_SHORT}}", name_short))
-    workflow_content = workflow_content.replace("{{FULLNAME}}", distro["fullname"])
     workflow_content = workflow_content.replace("{{MATRIX_SECTION}}", "")  # single-distro
     workflow_content = workflow_content.replace("{{VERSION}}", distro.get("version", ""))
     workflow_content = workflow_content.replace("{{DISTRO_FAMILY}}", distro.get("distro_family", ""))
     workflow_content = workflow_content.replace("{{DOCKERFILE}}", distro.get("dockerfile", ""))
+
+    # Replace new PER_DISTRO_VARS
+    for var, func in PER_DISTRO_VARS.items():
+        workflow_content = workflow_content.replace(f"{{{{{var}}}}}", func(distro))
 
     # Output filename matches tag prefix
     output_file = os.path.join(output_dir, f"{tag_prefix_template.replace('{{NAME_SHORT}}', name_short)}.yml")
@@ -55,6 +75,8 @@ def generate_matrix_workflow(template_content: str, output_file: str, distros: l
         matrix_lines.append(f"            docker_tag: {d.get('docker_tag', '')}")
         matrix_lines.append(f"            build_dir_prefix: {d.get('build_dir_prefix', '')}")
         matrix_lines.append(f"            fullname: {d['fullname']}")
+        matrix_lines.append(f"            distro_family: {d['distro_family']}")
+        matrix_lines.append(f"            version: {d['version']}")
 
     matrix_yaml = "\n".join(matrix_lines)
 
@@ -62,8 +84,14 @@ def generate_matrix_workflow(template_content: str, output_file: str, distros: l
     workflow_content = workflow_content.replace("{{MATRIX_SECTION}}", matrix_yaml)
     workflow_content = workflow_content.replace("{{TAG_PREFIX}}", tag_prefix)
     workflow_content = workflow_content.replace("{{NAME_SHORT}}", "all")
-    workflow_content = workflow_content.replace("{{DOCKER_TAG}}", "")  # Docker tag per matrix entry
-    workflow_content = workflow_content.replace("{{BUILD_DIR_PREFIX}}", "")  # per matrix entry
+
+    # Replace new MATRIX_VARS
+    for var, val in MATRIX_VARS.items():
+        workflow_content = workflow_content.replace(f"{{{{{var}}}}}", val)
+
+    # Clear placeholders that used to be per-distro
+    workflow_content = workflow_content.replace("{{DOCKER_TAG}}", "")
+    workflow_content = workflow_content.replace("{{BUILD_DIR_PREFIX}}", "")
     workflow_content = workflow_content.replace("{{FULLNAME}}", "all")
 
     output_path = os.path.join(OUTPUT_DIR, output_file)
