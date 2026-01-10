@@ -18,7 +18,7 @@ jobs:
             version: 7
             tag_prefix: docker-builds-rhel-7
             dockerfile: Dockerfiles/github/rhel-7/Dockerfile
-            distro_family: 
+            distro_family: rhel
 
     name: Build and push Docker for RHEL 7
 
