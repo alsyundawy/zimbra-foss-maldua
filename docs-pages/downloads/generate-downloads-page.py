@@ -693,8 +693,6 @@ def writeSimpleDownloadsPage(downloads_md):
   append_files(templatesDir + "/" + "simple-top.md", downloads_md)
   outputSectionSimple(downloads_md=downloads_md, versionTags=simple1VersionTags, releasesMatrix=simpleReleasesMatrix, shortName=f"10.1.x {STABLE_ICON} Stable {STABLE_ICON}")
   outputNewHLine(downloads_md)
-  outputSectionSimple(downloads_md=downloads_md, versionTags=simple2VersionTags, releasesMatrix=simpleReleasesMatrix, shortName=f"10.0.x {STABLE_ICON} Stable {STABLE_ICON}")
-  outputNewHLine(downloads_md)
   append_files(templatesDir + "/" + "simple-top.md", downloads_md)
 
 def writeCategoryDownloadsPage(
