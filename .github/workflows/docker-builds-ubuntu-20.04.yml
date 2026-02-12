@@ -9,7 +9,7 @@ env:
   IMAGE_FQDN: ghcr.io/maldua/zimbra-foss
 
 jobs:
-  publish-zimbra-foss-builder-image:
+  publish-zimbra-foss-image:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,13 +32,13 @@ jobs:
         run: echo "version=${BRANCH##*/}" >> $GITHUB_OUTPUT
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: zimbra-foss-builder Docker image
+      - name: zimbra-foss Docker image
         run: |
           docker build --tag ${{ env.IMAGE_FQDN }}:docker-${{ matrix.distro.distro_family }}-${{ matrix.distro.version }}-${{ steps.split-tag.outputs.version }} . -f ${{ matrix.distro.dockerfile }}
           docker push ${{ env.IMAGE_FQDN }}:docker-${{ matrix.distro.distro_family }}-${{ matrix.distro.version }}-${{ steps.split-tag.outputs.version }}
