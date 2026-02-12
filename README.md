@@ -86,6 +86,7 @@ If you want to take over this project these are the documentation files that you
 - [Build Zimbra tgz installers thanks to Github Actions](BUILD-GITHUB-ACTION.md)
 - [Generate downloads page from Releases data thanks to Github Actions](DOWNLOADS-GITHUB-ACTION.md)
 - [Release instructions for the project maintainer](MAINTAINER-RELEASE.md)
+- [How to add a new platform](ADD-NEW-PLATFORM.md)
 
 ---
 
