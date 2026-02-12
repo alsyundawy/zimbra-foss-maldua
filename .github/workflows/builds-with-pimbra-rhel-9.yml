@@ -122,7 +122,7 @@ jobs:
           title: Zimbra ${{ steps.split-tag.outputs.version }} FOSS Builds ( RHEL 9 )
           body: |
             category: recent
-            **Want to download?** Please use: [Maldua’s Zimbra Foss Builds Downloads Page](https://maldua.github.io/zimbra-foss/downloads.html) instead. It's much easier to read and understand.
+            **Want to download?** Please use: [Maldua’s Zimbra Foss Builds Downloads Page](https://maldua.github.io/zimbra-foss/downloads/) instead. It's much easier to read and understand.
             **WARNING:** This is an automated build. You can give us some feedback about it either on the [issues page](https://github.com/maldua/zimbra-foss/issues) or in the [Zimbra forums thread](https://forums.zimbra.org/viewtopic.php?t=72655).
 
             download_comment: Includes [Pimbra patches](https://github.com/maldua-pimbra/maldua-pimbra).
