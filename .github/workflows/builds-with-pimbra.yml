@@ -100,7 +100,7 @@ jobs:
           echo "gid=$(id -g)" >> $GITHUB_OUTPUT
 
       - name: Run the build process with Docker
-        uses: addnab/docker-run-action@v3
+        uses: Baardrw/docker-run-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
